@@ -288,20 +288,21 @@ AC_SUBST([CRYPTO_IMPL_LIBS])
 AC_SUBST([CRYPTO_BUILTIN_TESTS])
 
 # WITH_TLS_IMPL
-
+PKG_PROG_PKG_CONFIG
 AC_ARG_WITH([tls-impl],
   [AS_HELP_STRING([--with-tls-impl=IMPL],
     [use specified TLS implementation @<:@auto@:>@])],
   [TLS_IMPL=$withval], [TLS_IMPL=auto])
 case "$TLS_IMPL" in
 openssl|auto)
-  AC_CHECK_LIB(ssl,SSL_CTX_new,[have_lib_ssl=true],[have_lib_ssl=false],
-               -lcrypto)
+  PKG_CHECK_MODULES([SSL],[libssl])
+  AC_CHECK_LIB([ssl],SSL_CTX_new,[have_lib_ssl=true],[have_lib_ssl=false], [$SSL_LIBS])
+
   AC_MSG_CHECKING([for OpenSSL])
   if test x$have_lib_ssl = xtrue ; then
     AC_DEFINE(TLS_IMPL_OPENSSL,1,[Define if TLS implementation is OpenSSL])
     AC_MSG_RESULT([yes])
-    TLS_IMPL_LIBS="-lssl -lcrypto"
+    TLS_IMPL_LIBS="$SSL_LIBS"
     TLS_IMPL=openssl
     AC_MSG_NOTICE([TLS module will use OpenSSL])
   else
@@ -359,10 +360,11 @@ AC_ARG_WITH([spake-openssl],
     [use OpenSSL for SPAKE preauth @<:@auto@:>@])],
   [], [withval=auto])
 if test "$withval" = auto -o "$withval" = yes; then
-  AC_CHECK_LIB([crypto],[EC_POINT_new],[have_crypto=true],[have_crypto=false])
+  PKG_CHECK_MODULES([CRYPTO], [libcrypto])
+  AC_CHECK_LIB([crypto],[EC_POINT_new],[have_crypto=true],[have_crypto=false],[$CRYPTO_LIBS])
   if test "$have_crypto" = true; then
     AC_DEFINE(SPAKE_OPENSSL,1,[Define to use OpenSSL for SPAKE preauth])
-    SPAKE_OPENSSL_LIBS=-lcrypto
+    SPAKE_OPENSSL_LIBS="$CRYPTO_LIBS"
     HAVE_SPAKE_OPENSSL=yes
   elif test "$withval" = yes; then
     AC_MSG_ERROR([OpenSSL libcrypto not found])
